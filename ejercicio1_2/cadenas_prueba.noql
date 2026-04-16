@@ -1,0 +1,234 @@
+//  CADENAS DE PRUEBA — LENGUAJE NoQL
+//  Cada bloque cubre un aspecto distinto de la gramática.
+
+
+// 1. INSERT básico (un documento)
+
+INSERT INTO usuarios { "nombre": "Ana Torres", "edad": 30, "activo": true }
+
+INSERT INTO productos {
+    "sku": "ELEC-001",
+    "nombre": "Laptop X1",
+    "precio": 1299.99,
+    "stock": 50,
+    "tags": ["electronica", "computacion"],
+    "especificaciones": {
+        "ram": "16GB",
+        "almacenamiento": "512GB SSD"
+    }
+}
+
+
+// 2. INSERT múltiple (array de documentos) 
+
+INSERT INTO categorias [
+    { "id": "cat-01", "nombre": "Electronica", "activa": true },
+    { "id": "cat-02", "nombre": "Ropa",        "activa": true },
+    { "id": "cat-03", "nombre": "Hogar",       "activa": false }
+]
+
+
+// 3. INSERT con valores nulos y arrays vacíos 
+
+INSERT INTO sesiones {
+    "usuario_id": "usr-99",
+    "token": null,
+    "permisos": [],
+    "metadata": {}
+}
+
+
+// 4. FIND sin condición (toda la colección) 
+
+FIND FROM productos
+
+
+// 5. FIND con WHERE simple 
+
+FIND FROM usuarios WHERE activo == true
+
+FIND FROM productos WHERE precio < 500
+
+FIND FROM pedidos WHERE estado != "cancelado"
+
+
+// 6. FIND con SELECT (proyección de campos) 
+
+FIND SELECT nombre, email, edad FROM usuarios WHERE activo == true
+
+FIND SELECT * FROM productos WHERE stock > 0
+
+
+// 7. FIND con condiciones compuestas (AND / OR / NOT) 
+
+FIND FROM usuarios WHERE edad >= 18 AND activo == true
+
+FIND FROM productos WHERE precio > 100 AND precio < 1000 AND stock > 0
+
+FIND FROM clientes WHERE ciudad == "Bogota" OR ciudad == "Medellin"
+
+FIND FROM empleados WHERE NOT departamento == "RRHH"
+
+FIND FROM pedidos WHERE (estado == "pendiente" OR estado == "procesando") AND prioridad == "alta"
+
+
+// 8. FIND con LIKE (coincidencia de patrones) 
+
+FIND FROM usuarios WHERE nombre LIKE "Ana%"
+
+FIND FROM productos WHERE descripcion LIKE "%inalambrico%"
+
+
+// 9. FIND con IN / NOT IN
+
+FIND FROM usuarios WHERE rol IN ("admin", "moderador", "editor")
+
+FIND FROM productos WHERE categoria NOT IN ("descontinuado", "archivado")
+
+
+// 10. FIND con CONTAINS (para arrays) 
+
+FIND FROM articulos WHERE tags CONTAINS "tecnologia"
+
+FIND FROM pedidos WHERE items CONTAINS "SKU-042"
+
+
+// 11. FIND con EXISTS (campo existe en el documento)
+
+FIND FROM usuarios WHERE telefono EXISTS
+
+FIND FROM productos WHERE descuento EXISTS
+
+
+// 12. FIND con BETWEEN 
+
+FIND FROM pedidos WHERE total BETWEEN 100 AND 500
+
+FIND FROM empleados WHERE salario BETWEEN 2000000 AND 5000000
+
+
+// 13. FIND con SORT, LIMIT y SKIP 
+
+FIND FROM productos SORT BY precio ASC LIMIT 10
+
+FIND FROM pedidos WHERE activo == true SORT BY fecha DESC LIMIT 5 SKIP 20
+
+FIND SELECT nombre, fecha FROM pedidos
+    WHERE estado == "entregado"
+    SORT BY fecha DESC, total ASC
+    LIMIT 25
+    SKIP 0
+
+
+// 14. FIND con rutas de campo anidadas (dot notation)
+
+FIND FROM usuarios WHERE direccion.ciudad == "Bogota"
+
+FIND FROM productos WHERE especificaciones.ram == "16GB"
+
+FIND SELECT nombre, direccion.ciudad, contacto.email
+    FROM clientes
+    WHERE direccion.pais == "Colombia"
+    SORT BY nombre ASC
+
+
+// 15. UPDATE con asignaciones simples 
+
+UPDATE usuarios SET activo = false WHERE edad < 18
+
+UPDATE productos SET precio = 999.99 WHERE sku == "ELEC-001"
+
+UPDATE pedidos SET estado = "enviado" WHERE id == "ORD-2024-001"
+
+
+// 16. UPDATE con operadores += y -= 
+
+UPDATE productos SET stock -= 1 WHERE sku == "ELEC-001"
+
+UPDATE empleados SET salario += 200000 WHERE rendimiento == "excelente"
+
+UPDATE cuentas SET saldo -= 50000, intentos_fallidos += 1 WHERE id == "acc-7"
+
+
+// 17. UPDATE con múltiples campos
+
+UPDATE usuarios
+    SET nombre = "Ana M. Torres", email = "ana@nuevo.com", actualizado = true
+    WHERE id == "usr-001"
+
+
+// 18. UPDATE usando documento completo
+
+UPDATE configuracion SET {
+    "tema": "oscuro",
+    "idioma": "es",
+    "notificaciones": true,
+    "version": 2
+}
+WHERE usuario_id == "usr-001"
+
+
+// 19. UPDATE sin WHERE (afecta todos los documentos)
+
+UPDATE productos SET destacado = false
+
+
+// 20. DELETE con condición
+
+DELETE FROM usuarios WHERE activo == false
+
+DELETE FROM sesiones WHERE expiracion < 1700000000
+
+DELETE FROM logs WHERE nivel == "debug" AND fecha < "2024-01-01"
+
+
+// 21. DELETE con condiciones compuestas 
+
+DELETE FROM notificaciones WHERE leida == true AND fecha < "2024-06-01"
+
+DELETE FROM tokens WHERE usuario_id == "usr-99" OR expirado == true
+
+DELETE FROM pedidos WHERE (estado == "cancelado" OR estado == "rechazado") AND fecha < "2023-01-01"
+
+
+// 22. DELETE sin WHERE (vaciar colección)
+
+DELETE FROM sesiones_temporales
+
+DELETE FROM cache
+
+
+// 23. Múltiples sentencias en un mismo programa 
+
+INSERT INTO auditoria { "accion": "login", "usuario": "juan", "ip": "192.168.1.1" };
+UPDATE usuarios SET ultimo_acceso = "2024-11-20" WHERE username == "juan";
+FIND SELECT username, ultimo_acceso FROM usuarios WHERE username == "juan";
+
+
+// 24. Consulta compleja combinada
+
+FIND SELECT
+    nombre, email, direccion.ciudad, pedidos_totales
+FROM clientes
+WHERE
+    activo == true
+    AND direccion.pais == "Colombia"
+    AND (suscripcion == "premium" OR pedidos_totales > 10)
+    AND NOT bloqueado == true
+SORT BY pedidos_totales DESC, nombre ASC
+LIMIT 50
+SKIP 0
+
+
+// 25. Casos con comentarios en línea
+
+// Buscar productos con bajo stock para reabastecimiento
+FIND SELECT sku, nombre, stock FROM inventario
+    WHERE stock < 10 AND activo == true
+    SORT BY stock ASC
+    LIMIT 100
+
+/* Actualización masiva de precios
+   para la campaña de fin de año */
+UPDATE productos SET precio *= 0.9 // Descuento del 10%
+    WHERE categoria == "electronica" AND destacado == true
